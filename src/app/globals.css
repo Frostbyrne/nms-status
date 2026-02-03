@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --animate-scanline: scanline 8s linear infinite;
+  
+  @keyframes scanline {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 100%; }
+  }
+}
+
+:root {
+  /* Industrial Signal Theme */
+  --background: hsl(0 0% 4%);      /* #0a0a0a */
+  --foreground: hsl(0 0% 90%);     /* #e5e5e5 */
+  
+  --card: hsl(0 0% 0%);            /* True Black */
+  --card-foreground: hsl(0 0% 90%);
+  
+  --popover: hsl(0 0% 5%);
+  --popover-foreground: hsl(0 0% 90%);
+  
+  --primary: hsl(24 94% 53%);      /* #f97316 - ORANGE */
+  --primary-foreground: hsl(0 0% 4%);
+  
+  --secondary: hsl(0 0% 20%);
+  --secondary-foreground: hsl(0 0% 90%);
+  
+  --muted: hsl(0 0% 15%);
+  --muted-foreground: hsl(0 0% 40%);
+  
+  --accent: hsl(24 94% 53%);
+  --accent-foreground: hsl(0 0% 4%);
+  
+  --destructive: hsl(0 80% 50%);
+  --destructive-foreground: hsl(0 0% 98%);
+  
+  --border: hsl(0 0% 15%);
+  --input: hsl(0 0% 15%);
+  --ring: hsl(24 94% 53%);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Utilities */
+.signal-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+.text-tech {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background); 
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border); 
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground); 
+}
