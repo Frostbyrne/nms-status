@@ -33,26 +33,54 @@ export function StatusDashboard() {
   const [deviceGroups, setDeviceGroups] = useState<LibreNMSDeviceGroup[]>([]);
 
 
+
   // Filtering & Sorting State
   const [filterType, setFilterType] = useState<string>("all");
   const [filterGroup, setFilterGroup] = useState<string>(() => {
     return searchParams.get("group") || "all";
   });
-  const [sortBy, setSortBy] = useState<"status" | "name" | "id">("status");
-  const [showDownOnly, setShowDownOnly] = useState(false);
+  
+  // Initialize from URL params
+  const [sortBy, setSortBy] = useState<"status" | "name" | "id">(() => {
+    const param = searchParams.get("sort");
+    if (param === "name" || param === "id" || param === "status") return param;
+    return "status";
+  });
+  
+  const [showDownOnly, setShowDownOnly] = useState(() => {
+    return searchParams.get("down") === "true";
+  });
 
-  // Sync URL when group filter changes
-  const handleGroupChange = useCallback((groupId: string) => {
-    setFilterGroup(groupId);
+  // Helper to update URL params
+  const updateUrlParam = useCallback((key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (groupId === "all") {
-      params.delete("group");
+    if (value === null) {
+      params.delete(key);
     } else {
-      params.set("group", groupId);
+      params.set(key, value);
     }
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     router.replace(newUrl, { scroll: false });
   }, [searchParams, router]);
+
+  // Sync URL when group filter changes
+  const handleGroupChange = useCallback((groupId: string) => {
+    setFilterGroup(groupId);
+    updateUrlParam("group", groupId === "all" ? null : groupId);
+  }, [updateUrlParam]);
+
+  // Sync sort change
+  const handleSortChange = useCallback((newSort: "status" | "name" | "id") => {
+    setSortBy(newSort);
+    updateUrlParam("sort", newSort === "status" ? null : newSort);
+  }, [updateUrlParam]);
+
+  // Sync down toggle
+  const handleToggleDownOnly = useCallback(() => {
+    const newValue = !showDownOnly;
+    setShowDownOnly(newValue);
+    updateUrlParam("down", newValue ? "true" : null);
+  }, [showDownOnly, updateUrlParam]);
 
   // Load config on mount
   useEffect(() => {
@@ -241,7 +269,7 @@ export function StatusDashboard() {
                    <div className="relative group">
                         <select 
                           value={sortBy}
-                          onChange={(e) => setSortBy(e.target.value as "status" | "name" | "id")}
+                          onChange={(e) => handleSortChange(e.target.value as "status" | "name" | "id")}
                           className="appearance-none bg-transparent text-zinc-400 text-[10px] font-mono uppercase px-2 py-2 pr-6 cursor-pointer hover:bg-white/5 transition-colors focus:outline-none focus:bg-white/10"
                         >
                           <option value="status">SORT: STATUS</option>
@@ -255,7 +283,7 @@ export function StatusDashboard() {
 
                    {/* Down Only Toggle */}
                    <button 
-                      onClick={() => setShowDownOnly(!showDownOnly)}
+                      onClick={handleToggleDownOnly}
                       className={`text-[10px] font-mono uppercase px-3 py-1.5 border transition-colors ${showDownOnly ? "border-red-500/50 text-red-400 bg-red-500/10" : "border-white/10 text-zinc-500 hover:border-white/20"}`}
                    >
                       {showDownOnly ? "SHOWING DOWN ONLY" : "SHOW DOWN ONLY"}
