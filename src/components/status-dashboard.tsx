@@ -32,24 +32,55 @@ export function StatusDashboard() {
   // Groups State
   const [deviceGroups, setDeviceGroups] = useState<LibreNMSDeviceGroup[]>([]);
 
-  // Filtering State - Initialize from URL param
+
+
+  // Filtering & Sorting State
   const [filterType, setFilterType] = useState<string>("all");
   const [filterGroup, setFilterGroup] = useState<string>(() => {
     return searchParams.get("group") || "all";
   });
+  
+  // Initialize from URL params
+  const [sortBy, setSortBy] = useState<"status" | "name" | "id">(() => {
+    const param = searchParams.get("sort");
+    if (param === "name" || param === "id" || param === "status") return param;
+    return "status";
+  });
+  
+  const [showDownOnly, setShowDownOnly] = useState(() => {
+    return searchParams.get("down") === "true";
+  });
 
-  // Sync URL when group filter changes
-  const handleGroupChange = useCallback((groupId: string) => {
-    setFilterGroup(groupId);
+  // Helper to update URL params
+  const updateUrlParam = useCallback((key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
-    if (groupId === "all") {
-      params.delete("group");
+    if (value === null) {
+      params.delete(key);
     } else {
-      params.set("group", groupId);
+      params.set(key, value);
     }
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     router.replace(newUrl, { scroll: false });
   }, [searchParams, router]);
+
+  // Sync URL when group filter changes
+  const handleGroupChange = useCallback((groupId: string) => {
+    setFilterGroup(groupId);
+    updateUrlParam("group", groupId === "all" ? null : groupId);
+  }, [updateUrlParam]);
+
+  // Sync sort change
+  const handleSortChange = useCallback((newSort: "status" | "name" | "id") => {
+    setSortBy(newSort);
+    updateUrlParam("sort", newSort === "status" ? null : newSort);
+  }, [updateUrlParam]);
+
+  // Sync down toggle
+  const handleToggleDownOnly = useCallback(() => {
+    const newValue = !showDownOnly;
+    setShowDownOnly(newValue);
+    updateUrlParam("down", newValue ? "true" : null);
+  }, [showDownOnly, updateUrlParam]);
 
   // Load config on mount
   useEffect(() => {
@@ -141,17 +172,6 @@ export function StatusDashboard() {
         };
       });
 
-      // Sort: Down devices first, then alerts, then by device ID
-      mappedDevices.sort((a, b) => {
-        const aDown = a.status === false || a.status === 0;
-        const bDown = b.status === false || b.status === 0;
-        if (aDown && !bDown) return -1;
-        if (!aDown && bDown) return 1;
-        if (a.activeAlert && !b.activeAlert) return -1;
-        if (!a.activeAlert && b.activeAlert) return 1;
-        return a.device_id - b.device_id;
-      });
-
       setDevices(mappedDevices);
       setDeviceGroups(rawGroups);
 
@@ -187,14 +207,41 @@ export function StatusDashboard() {
     return group?.devices?.includes(device.device_id) ?? false;
   };
 
-  const visibleDevices = devices.filter(d => {
-    if (filterType !== "all" && d.type !== filterType) return false;
-    if (filterGroup !== "all" && !isDeviceInGroup(d, filterGroup)) return false;
-    return true;
-  });
+  const processedDevices = devices
+    .filter(d => {
+      // Type Filter
+      if (filterType !== "all" && d.type !== filterType) return false;
+      // Group Filter
+      if (filterGroup !== "all" && !isDeviceInGroup(d, filterGroup)) return false;
+      // Down Only Filter
+      if (showDownOnly) {
+         const isDown = d.status === false || d.status === 0;
+         return isDown;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+        if (sortBy === "name") {
+            const nameA = a.sysName || a.hostname;
+            const nameB = b.sysName || b.hostname;
+            return nameA.localeCompare(nameB);
+        }
+        if (sortBy === "id") {
+            return a.device_id - b.device_id;
+        }
+        // Default: Sort by Status (Priority)
+        const aDown = a.status === false || a.status === 0;
+        const bDown = b.status === false || b.status === 0;
+        if (aDown && !bDown) return -1;
+        if (!aDown && bDown) return 1;
+        if (a.activeAlert && !b.activeAlert) return -1;
+        if (!a.activeAlert && b.activeAlert) return 1;
+        return a.device_id - b.device_id;
+    });
+
 
   // Build alert messages for StatusBoard
-  const alertMessages = visibleDevices
+  const alertMessages = processedDevices
     .filter(d => d.activeAlert || d.status === false || d.status === 0)
     .map(d => {
       const displayName = d.sysName || d.hostname;
@@ -217,7 +264,30 @@ export function StatusDashboard() {
         <div className="sticky top-0 z-30 bg-black/90 backdrop-blur-md border-b border-white/5">
             <div className="max-w-[1600px] 2xl:max-w-[2400px] min-[3000px]:max-w-[95vw] mx-auto px-6 h-12 flex items-center justify-between">
                 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
+                  {/* Sort Control */}
+                   <div className="relative group">
+                        <select 
+                          value={sortBy}
+                          onChange={(e) => handleSortChange(e.target.value as "status" | "name" | "id")}
+                          className="appearance-none bg-transparent text-zinc-400 text-[10px] font-mono uppercase px-2 py-2 pr-6 cursor-pointer hover:bg-white/5 transition-colors focus:outline-none focus:bg-white/10"
+                        >
+                          <option value="status">SORT: STATUS</option>
+                          <option value="name">SORT: NAME</option>
+                          <option value="id">SORT: ID</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-zinc-600">
+                           <svg className="h-3 w-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
+                        </div>
+                   </div>
+
+                   {/* Down Only Toggle */}
+                   <button 
+                      onClick={handleToggleDownOnly}
+                      className={`text-[10px] font-mono uppercase px-3 py-1.5 border transition-colors ${showDownOnly ? "border-red-500/50 text-red-400 bg-red-500/10" : "border-white/10 text-zinc-500 hover:border-white/20"}`}
+                   >
+                      {showDownOnly ? "SHOWING DOWN ONLY" : "SHOW DOWN ONLY"}
+                   </button>
                 </div>
 
                 {(availableTypes.length > 0 || availableGroups.length > 0) && (
@@ -277,13 +347,14 @@ export function StatusDashboard() {
              </div>
           )}
 
+
           {/* Signal Grid */}
           <motion.div 
             layout
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[2000px]:grid-cols-6 min-[3000px]:grid-cols-8 gap-4"
           >
             <AnimatePresence mode="popLayout">
-              {visibleDevices.map((device) => (
+              {processedDevices.map((device) => (
                   <AlertCard 
                       key={device.device_id} 
                       alert={device.activeAlert} 
