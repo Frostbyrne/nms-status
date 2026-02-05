@@ -34,8 +34,11 @@ export function StatusDashboard() {
 
 
 
+
   // Filtering & Sorting State
-  const [filterType, setFilterType] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>(() => {
+    return searchParams.get("type") || "all";
+  });
   const [filterGroup, setFilterGroup] = useState<string>(() => {
     return searchParams.get("group") || "all";
   });
@@ -62,6 +65,12 @@ export function StatusDashboard() {
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     router.replace(newUrl, { scroll: false });
   }, [searchParams, router]);
+
+  // Sync URL when type filter changes
+  const handleTypeChange = useCallback((typeId: string) => {
+    setFilterType(typeId);
+    updateUrlParam("type", typeId === "all" ? null : typeId);
+  }, [updateUrlParam]);
 
   // Sync URL when group filter changes
   const handleGroupChange = useCallback((groupId: string) => {
@@ -296,7 +305,7 @@ export function StatusDashboard() {
                       <div className="relative group">
                           <select 
                             value={filterType}
-                            onChange={(e) => setFilterType(e.target.value)}
+                            onChange={(e) => handleTypeChange(e.target.value)}
                             className="appearance-none bg-transparent text-zinc-400 text-[10px] font-mono uppercase px-4 py-2 pr-8 cursor-pointer hover:bg-white/5 transition-colors focus:outline-none focus:bg-white/10"
                             style={{ textAlignLast: 'right' }}
                           >
