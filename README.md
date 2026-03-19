@@ -4,6 +4,27 @@ A split-flap display style status board for LibreNMS devices.
 
 <img width="2878" height="1549" alt="image" src="https://github.com/user-attachments/assets/a6275082-fd2b-4220-91c3-10f366a4c9bc" />
 
+## Requirements
+
+Before you start, make sure these are installed and available in your shell:
+
+- Git
+
+- Node.js (recommended: current LTS)
+
+- pnpm
+
+You can verify that with:
+
+```bash
+node -v
+pnpm -v
+git --version
+```
+
+If node -v fails with node: not found, install Node.js first.
+pnpm install will not work correctly unless Node.js is installed and in your PATH.
+
 ## Setup
 
 1. Install dependencies:
